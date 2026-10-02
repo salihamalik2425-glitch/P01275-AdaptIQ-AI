@@ -37,24 +37,23 @@ class AIService(ABC):
         raise NotImplementedError
 
 
-class QwenAIService(AIService):
-    """Integration boundary for Alibaba Cloud Model Studio / Qwen."""
+class OpenAIService(AIService):
+    """OpenAI-backed educational assistant and quiz generator."""
 
-    def __init__(self, api_key: str | None, model: str, base_url: str, timeout: float) -> None:
+    def __init__(self, api_key: str | None, model: str, timeout: float) -> None:
         self.api_key = api_key
         self.model = model
-        self.base_url = base_url
         self.timeout = timeout
 
     def _require_configuration(self) -> None:
         if not self.api_key:
             raise IntegrationNotConfiguredError(
-                "Qwen AI is not configured. Set DASHSCOPE_API_KEY before using AI endpoints."
+                "OpenAI is not configured. Set OPENAI_API_KEY before using AI endpoints."
             )
 
     async def answer_question(self, request: ChatRequest, twin: LearningTwin) -> str:
         self._require_configuration()
-        client = AsyncOpenAI(api_key=self.api_key, base_url=self.base_url, timeout=self.timeout)
+        client = AsyncOpenAI(api_key=self.api_key, timeout=self.timeout)
         try:
             response = await client.chat.completions.create(
                 model=self.model,
@@ -65,13 +64,13 @@ class QwenAIService(AIService):
                 temperature=0.4,
             )
         except (APIConnectionError, APITimeoutError) as error:
-            logger.warning("Qwen connection failed: %s", error.__class__.__name__)
+            logger.warning("OpenAI connection failed: %s", error.__class__.__name__)
             raise AIServiceError("The AI service is temporarily unavailable. Please try again.") from error
         except APIStatusError as error:
-            logger.warning("Qwen returned status %s", error.status_code)
+            logger.warning("OpenAI returned status %s", error.status_code)
             raise AIServiceError("The AI service could not process this request.") from error
         except Exception as error:
-            logger.exception("Unexpected Qwen integration error")
+            logger.exception("Unexpected OpenAI integration error")
             raise AIServiceError("The AI service could not process this request.") from error
 
         answer = response.choices[0].message.content if response.choices else None
@@ -81,7 +80,7 @@ class QwenAIService(AIService):
 
     async def generate_quiz(self, request: QuizGenerateRequest, twin: LearningTwin) -> QuizResponse:
         self._require_configuration()
-        client = AsyncOpenAI(api_key=self.api_key, base_url=self.base_url, timeout=self.timeout)
+        client = AsyncOpenAI(api_key=self.api_key, timeout=self.timeout)
         system_prompt = f"""You are AdaptIQ AI, an educational quiz writer. Create accurate, unambiguous questions at the requested difficulty.
 Adapt the questions to this Learning Twin where relevant:
 - Learning style: {twin.learning_style}
@@ -108,13 +107,13 @@ Include exactly the requested number of questions. Every correct_answer must exa
                 temperature=0.3,
             )
         except (APIConnectionError, APITimeoutError) as error:
-            logger.warning("Qwen quiz generation connection failed: %s", error.__class__.__name__)
+            logger.warning("OpenAI quiz generation connection failed: %s", error.__class__.__name__)
             raise AIServiceError("The AI service is temporarily unavailable. Please try again.") from error
         except APIStatusError as error:
-            logger.warning("Qwen quiz generation returned status %s", error.status_code)
+            logger.warning("OpenAI quiz generation returned status %s", error.status_code)
             raise AIServiceError("The AI service could not generate this quiz.") from error
         except Exception as error:
-            logger.exception("Unexpected Qwen quiz generation error")
+            logger.exception("Unexpected OpenAI quiz generation error")
             raise AIServiceError("The AI service could not generate this quiz.") from error
 
         content = response.choices[0].message.content if response.choices else None
@@ -136,9 +135,8 @@ Include exactly the requested number of questions. Every correct_answer must exa
         return quiz
 
 
-ai_service: AIService = QwenAIService(
-    api_key=settings.dashscope_api_key,
-    model=settings.qwen_model,
-    base_url=settings.qwen_base_url,
+ai_service: AIService = OpenAIService(
+    api_key=settings.openai_api_key,
+    model=settings.openai_model,
     timeout=settings.ai_timeout_seconds,
 )
