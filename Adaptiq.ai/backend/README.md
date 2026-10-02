@@ -7,13 +7,13 @@ FastAPI service for the AdaptIQ learning companion.
 From the repository root:
 
 ```powershell
-cd backend
+cd Adaptiq.ai/backend
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 Copy-Item .env.example .env
-uvicorn main:app --reload --port 8000
+uvicorn main:app --reload --env-file .env --port 8000
 ```
 
 The API is available at `http://localhost:8000`. Interactive documentation is at `http://localhost:8000/docs`.
@@ -32,8 +32,8 @@ Put these values only in `backend/.env`, never in `frontend/.env.local` or clien
 
 Run `supabase/schema.sql` in Supabase Dashboard -> SQL Editor before starting with Supabase credentials. The service-role key is read only by FastAPI and bypasses RLS, so these API routes must later derive `student_id` from verified Supabase Auth tokens rather than trusting arbitrary client input. When credentials are absent, the API uses the process-local development repository.
 
-## Current integration boundaries
+## Integration status
 
-- Chat and quiz generation use an `AIService` interface and return `503 integration_not_configured` until the Qwen adapter is implemented.
-- PDF and lecture uploads validate the incoming file and return an explicit not-processed status. They do not invent extracted text or transcripts.
-- Learning Twin, quiz submission, progress, and history use an in-memory development repository. State resets when the process restarts and will be replaced by Supabase persistence in a later phase.
+- Chat and quiz generation use the Qwen adapter and require `DASHSCOPE_API_KEY`. Quiz output is validated for the requested question count and answer keys.
+- PDF and lecture uploads validate the incoming file and return an explicit not-processed status. Text extraction, transcription, and generated notes require their processing integrations.
+- Learning Twin, quiz submission, progress, and history use an in-memory development repository when Supabase credentials are absent. State resets when the process restarts; configure Supabase for persistent storage.

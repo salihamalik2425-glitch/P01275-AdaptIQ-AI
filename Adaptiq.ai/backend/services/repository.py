@@ -46,7 +46,7 @@ class DevelopmentRepository:
             twin = self.get_twin(request.student_id)
             confidence_delta = 3 if score >= 80 else -3 if score < 50 else 0
             weak_topics = list(twin.weak_topics)
-            if score < 60 and request.topic not in weak_topics:
+            if score < 70 and request.topic not in weak_topics:
                 weak_topics.append(request.topic)
             if score >= 80:
                 weak_topics = [topic for topic in weak_topics if topic != request.topic]
@@ -145,7 +145,7 @@ class SupabaseRepository:
         twin = self.get_twin(request.student_id)
         confidence_delta = 3 if score >= 80 else -3 if score < 50 else 0
         weak_topics = list(twin.weak_topics)
-        if score < 60 and request.topic not in weak_topics:
+        if score < 70 and request.topic not in weak_topics:
             weak_topics.append(request.topic)
         if score >= 80:
             weak_topics = [topic for topic in weak_topics if topic != request.topic]
